@@ -1,0 +1,5 @@
+.gitnexus
+build/
+*.onnx
+*.jpg
+*.txt
