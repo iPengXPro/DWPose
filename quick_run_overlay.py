@@ -207,14 +207,6 @@ def draw_handpose(canvas, keypoints, scores, score_thr=0.3, is_left=True):
 
             cv2.line(canvas, (int(x1), int(y1)), (int(x2), int(y2)), bgr, thickness=2)
 
-        # 绘制关键点
-        for i, (kpt, score) in enumerate(zip(hand_kps, hand_scs)):
-            if score < score_thr:
-                continue
-            x, y = int(kpt[0]), int(kpt[1])
-            if 0 <= x < W and 0 <= y < H:
-                cv2.circle(canvas, (x, y), 4, (0, 0, 255), thickness=-1)
-
     return canvas
 
 
