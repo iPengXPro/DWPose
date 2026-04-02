@@ -6,6 +6,7 @@ DWPose 视频推理脚本
 Usage:
     python video_inference.py --input video.mp4 --output result.mp4
     python video_inference.py -i video.mp4 -o result.mp4 --skip 2
+    python video_inference.py -i video.mp4 -o result.mp4 --cpu  # Force CPU mode
 """
 
 import os
@@ -182,7 +183,7 @@ def remap_keypoints(keypoints, scores):
     return new_keypoints_info[..., :2], new_keypoints_info[..., 2]
 
 
-def load_models():
+def load_models(use_gpu=True):
     """加载模型"""
     det_model = MODEL_DIR / "yolox_l.onnx"
     pose_model = MODEL_DIR / "dw-ll_ucoco_384.onnx"
@@ -194,13 +195,25 @@ def load_models():
         print(f"Error: {pose_model} not found")
         sys.exit(1)
 
-    providers = ['CPUExecutionProvider']
-    print("Loading models...")
+    # 选择执行提供者
+    if use_gpu:
+        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        print("Loading models (GPU mode)...")
+    else:
+        providers = ['CPUExecutionProvider']
+        print("Loading models (CPU mode)...")
+
     print(f"  Detection: {det_model.name}")
     print(f"  Pose: {pose_model.name}")
+    print(f"  Providers: {providers}")
 
     session_det = ort.InferenceSession(str(det_model), providers=providers)
     session_pose = ort.InferenceSession(str(pose_model), providers=providers)
+
+    # 显示实际使用的设备
+    det_provider = session_det.get_providers()[0]
+    pose_provider = session_pose.get_providers()[0]
+    print(f"  Actual device: det={det_provider}, pose={pose_provider}")
 
     return session_det, session_pose
 
@@ -277,6 +290,7 @@ def main():
     parser.add_argument("-i", "--input", required=True, help="Input video path")
     parser.add_argument("-o", "--output", required=True, help="Output video path")
     parser.add_argument("--skip", type=int, default=1, help="Skip frames (1=process all, 2=skip half)")
+    parser.add_argument("--cpu", action="store_true", help="Force CPU mode (default: GPU if available)")
     parser.add_argument("--no-progress", action="store_true", help="Disable progress display")
     args = parser.parse_args()
 
@@ -288,7 +302,8 @@ def main():
         sys.exit(1)
 
     # 加载模型
-    session_det, session_pose = load_models()
+    use_gpu = not args.cpu
+    session_det, session_pose = load_models(use_gpu=use_gpu)
     print()
 
     # 处理视频
