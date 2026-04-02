@@ -3,3 +3,4 @@ build/
 *.onnx
 *.jpg
 *.txt
+__pycache__/
